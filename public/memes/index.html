@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>表情包图库 · meme-api</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+        "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.45;
+      --bg: Canvas;
+      --fg: CanvasText;
+      --card: color-mix(in oklab, Canvas 94%, CanvasText 6%);
+      --border: color-mix(in oklab, Canvas 82%, CanvasText 18%);
+      --accent: color-mix(in oklab, CanvasText 12%, Canvas 88%);
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+    }
+    header {
+      padding: 1.25rem clamp(1rem, 4vw, 2rem);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: color-mix(in oklab, var(--bg) 88%, transparent);
+      backdrop-filter: blur(10px);
+      z-index: 2;
+    }
+    h1 {
+      font-size: 1.2rem;
+      margin: 0 0 0.35rem;
+      font-weight: 650;
+    }
+    .sub {
+      margin: 0;
+      font-size: 0.9rem;
+      opacity: 0.78;
+    }
+    .sub a {
+      color: inherit;
+    }
+    main {
+      padding: 1.25rem clamp(1rem, 4vw, 2rem) 3rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .category {
+      margin-bottom: 2.25rem;
+    }
+    .category h2 {
+      font-size: 1.05rem;
+      margin: 0 0 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .badge {
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      background: var(--accent);
+      opacity: 0.95;
+    }
+    .pager {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin: 0.5rem 0 1rem;
+      font-size: 0.88rem;
+    }
+    .pager button {
+      font: inherit;
+      padding: 0.35rem 0.7rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: inherit;
+      cursor: pointer;
+    }
+    .pager button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+      gap: 0.65rem;
+    }
+    @media (min-width: 640px) {
+      .grid {
+        grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+      }
+    }
+    .tile {
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      padding: 0.45rem;
+      cursor: pointer;
+      transition: transform 0.12s ease, border-color 0.12s ease;
+      text-align: center;
+    }
+    .tile:hover {
+      transform: translateY(-1px);
+      border-color: color-mix(in oklab, var(--border) 55%, CanvasText);
+    }
+    .tile:focus-visible {
+      outline: 2px solid color-mix(in oklab, CanvasText 35%, transparent);
+      outline-offset: 2px;
+    }
+    .tile img {
+      width: 100%;
+      height: 112px;
+      object-fit: contain;
+      vertical-align: middle;
+      border-radius: 8px;
+      background: color-mix(in oklab, Canvas 92%, CanvasText 8%);
+    }
+    .tile .label {
+      margin-top: 0.35rem;
+      font-size: 0.72rem;
+      opacity: 0.8;
+      word-break: break-all;
+    }
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 1.25rem;
+      transform: translateX(-50%) translateY(120%);
+      opacity: 0;
+      padding: 0.6rem 1rem;
+      border-radius: 10px;
+      background: color-mix(in oklab, CanvasText 88%, Canvas 12%);
+      color: Canvas;
+      font-size: 0.9rem;
+      transition: transform 0.22s ease, opacity 0.22s ease;
+      z-index: 9;
+      pointer-events: none;
+      max-width: min(92vw, 420px);
+      text-align: center;
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    .error {
+      padding: 1rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
+    .empty {
+      opacity: 0.8;
+      padding: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>表情包图库</h1>
+    <p class="sub">
+      按文件夹分类 · 点击卡片复制可分享的直链 ·
+      <a href="/">API 说明</a>
+      · 每页数量：电脑端 100，手机端 40（随窗口宽度自动切换）
+    </p>
+  </header>
+  <main id="app">
+    <p class="empty">加载中…</p>
+  </main>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script>
+    (function () {
+      const app = document.getElementById("app");
+      const toastEl = document.getElementById("toast");
+      /** @type {Record<string, number>} */
+      const pageByCat = {};
+
+      function pageSize() {
+        return window.matchMedia("(max-width: 768px)").matches ? 40 : 100;
+      }
+
+      function showToast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add("show");
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(function () {
+          toastEl.classList.remove("show");
+        }, 2200);
+      }
+
+      async function copyText(text) {
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast("已复制链接，可粘贴到聊天或文档");
+        } catch {
+          window.prompt("复制以下链接", text);
+        }
+      }
+
+      function render(data) {
+        const origin = data.baseUrl || window.location.origin;
+        const categories = data.categories || [];
+        if (!categories.length) {
+          app.innerHTML =
+            '<div class="empty">暂无表情包。请将 WebP 放入 <code>public/meme/分类文件夹/</code> 后执行 <code>npm run build</code> 并重新部署。</div>';
+          return;
+        }
+
+        app.innerHTML = "";
+        const mq = window.matchMedia("(max-width: 768px)");
+        let lastSize = pageSize();
+
+        function ensurePage(catId, totalPages) {
+          let p = pageByCat[catId] || 1;
+          if (p > totalPages) p = totalPages;
+          if (p < 1) p = 1;
+          pageByCat[catId] = p;
+          return p;
+        }
+
+        function renderAll() {
+          const ps = pageSize();
+          if (ps !== lastSize) {
+            lastSize = ps;
+            for (const key of Object.keys(pageByCat)) pageByCat[key] = 1;
+          }
+          app.innerHTML = "";
+          for (const cat of categories) {
+            app.appendChild(renderCategory(cat, origin, ps));
+          }
+        }
+
+        function renderCategory(cat, origin, ps) {
+          const section = document.createElement("section");
+          section.className = "category";
+          const items = cat.items || [];
+          const totalPages = Math.max(1, Math.ceil(items.length / ps));
+          const page = ensurePage(cat.id, totalPages);
+          const start = (page - 1) * ps;
+          const slice = items.slice(start, start + ps);
+
+          const h2 = document.createElement("h2");
+          h2.appendChild(document.createTextNode(cat.name || cat.id));
+          const badge = document.createElement("span");
+          badge.className = "badge";
+          badge.textContent = items.length + " 张";
+          h2.appendChild(badge);
+          section.appendChild(h2);
+
+          const pager = document.createElement("div");
+          pager.className = "pager";
+          const prev = document.createElement("button");
+          prev.type = "button";
+          prev.textContent = "上一页";
+          prev.disabled = page <= 1;
+          prev.addEventListener("click", function () {
+            pageByCat[cat.id] = page - 1;
+            renderAll();
+          });
+          const next = document.createElement("button");
+          next.type = "button";
+          next.textContent = "下一页";
+          next.disabled = page >= totalPages;
+          next.addEventListener("click", function () {
+            pageByCat[cat.id] = page + 1;
+            renderAll();
+          });
+          const info = document.createElement("span");
+          info.textContent =
+            "第 " + page + " / " + totalPages + " 页 · 本页 " + slice.length + " 张";
+          pager.appendChild(prev);
+          pager.appendChild(next);
+          pager.appendChild(info);
+          section.appendChild(pager);
+
+          const grid = document.createElement("div");
+          grid.className = "grid";
+          for (const it of slice) {
+            const url = it.url || origin + "/meme/" + encodeURIComponent(cat.id) + "/" + encodeURIComponent(it.file);
+            const tile = document.createElement("button");
+            tile.type = "button";
+            tile.className = "tile";
+            tile.title = "点击复制：" + url;
+            const img = document.createElement("img");
+            img.loading = "lazy";
+            img.alt = it.file;
+            img.src = url;
+            tile.appendChild(img);
+            const label = document.createElement("div");
+            label.className = "label";
+            label.textContent = it.file;
+            tile.appendChild(label);
+            tile.addEventListener("click", function () {
+              copyText(url);
+            });
+            grid.appendChild(tile);
+          }
+          section.appendChild(grid);
+          return section;
+        }
+
+        renderAll();
+        mq.addEventListener("change", renderAll);
+      }
+
+      fetch("/api/v1/memes")
+        .then(function (r) {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        })
+        .then(render)
+        .catch(function (e) {
+          app.innerHTML =
+            '<div class="error">无法加载列表：<code>' +
+            String(e.message || e) +
+            '</code>。请确认 Worker 已部署且路由正确。</div>';
+        });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "meme-api",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/generate-manifest.mjs",
+    "dev": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250407.0",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.6.0"
+  }
+}

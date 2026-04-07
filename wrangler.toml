@@ -1,0 +1,15 @@
+name = "meme-api"
+main = "src/index.ts"
+compatibility_date = "2026-04-07"
+workers_dev = true
+
+# 将 Worker 绑定到你的 Zone 后，以下路由会把 meme.api.smyhub.com 指向本 Worker。
+# 若部署报错，可在 Cloudflare 控制台「Workers 路由」中手动添加，或暂时注释本段仅用 *.workers.dev 测试。
+[[routes]]
+pattern = "meme.api.smyhub.com/*"
+zone_name = "smyhub.com"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
