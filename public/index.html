@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>meme-api</title>
+  <style>
+    :root { color-scheme: light dark; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC","Microsoft YaHei", sans-serif; line-height: 1.55; }
+    body { max-width: 52rem; margin: 2rem auto; padding: 0 1.25rem; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+    pre { overflow: auto; padding: 0.9rem 1rem; border-radius: 8px; background: color-mix(in oklab, Canvas 92%, CanvasText 8%); }
+    a { color: inherit; }
+    h1 { font-size: 1.35rem; }
+    h2 { font-size: 1.05rem; margin-top: 1.75rem; }
+    .muted { opacity: 0.78; font-size: 0.92rem; }
+  </style>
+</head>
+<body>
+  <h1>meme-api</h1>
+  <p class="muted">静态站点（<a href="https://pages.cloudflare.com/">Cloudflare Pages</a>）。素材在仓库 <code>原图/</code> 内编号生成 <code>*.webp</code> / <code>*.gif</code>；<code>npm run build</code> 将 <code>原图/</code> 镜像到 <code>public/meme/</code> 用于部署。直链可被外部引用；JSON 已配置 CORS。</p>
+  <p><a href="/memes/">浏览图库（分页、按文件夹分类、点击复制链接）</a></p>
+
+  <h2>获取表情包列表</h2>
+  <p><code>GET /memes.json</code>（与旧版兼容：<code>GET /api/v1/memes</code>，内部映射为同一份 JSON）</p>
+  <p>返回所有分类及文件相对路径；前端与脚本可用其拼接直链。</p>
+  <pre id="curl-memes">curl -sS ""</pre>
+
+  <h2>直链访问单张表情包</h2>
+  <p>部署后文件在 <code>public/meme/&lt;分类&gt;/</code>（与仓库 <code>原图/&lt;分类&gt;/</code> 内容一致），对应 URL：</p>
+  <p><code>GET /meme/&lt;分类&gt;/&lt;文件名&gt;.webp</code> 或 <code>.gif</code></p>
+  <pre id="curl-example">https://example.com/meme/%E7%99%BD%E8%89%B2%E5%B0%8F%E4%BA%BA/1.webp</pre>
+  <p class="muted">中文或多段路径请使用编码后的 URL（浏览器会自动处理，图库「复制链接」亦为已编码地址）。</p>
+
+  <h2>维护流程</h2>
+  <ol>
+    <li>在 <code>原图/&lt;分类&gt;/</code> 放入未编号素材；运行 <code>python convert_to_webp.py</code>（就地生成编号文件，成功后会<strong>删除</strong>这些未编号源图；若需保留源文件可加 <code>--keep-sources</code>）。</li>
+    <li>若仍有「动图 WebP」编号文件，可在 <code>原图/</code> 下运行 <code>python animated_webp_to_gif.py</code> 转为 <code>.gif</code>。</li>
+    <li><code>npm run build</code> 将 <code>原图/</code> 镜像到 <code>public/meme/</code> 并生成 <code>public/memes.json</code>，再部署 <code>public/</code>。</li>
+  </ol>
+  <script>
+    (function () {
+      var o = window.location.origin;
+      document.title = "meme-api · " + o.replace(/^https?:\/\//, "");
+      document.getElementById("curl-memes").textContent = 'curl -sS "' + o + '/memes.json"';
+      document.getElementById("curl-example").textContent =
+        o + "/meme/" + encodeURIComponent("白色小人") + "/" + encodeURIComponent("1.webp");
+    })();
+  </script>
+</body>
+</html>

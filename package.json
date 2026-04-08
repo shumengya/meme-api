@@ -3,13 +3,10 @@
   "private": true,
   "scripts": {
     "build": "node scripts/generate-manifest.mjs",
-    "dev": "npm run build && wrangler dev",
-    "deploy": "npm run build && wrangler deploy",
-    "check": "tsc --noEmit"
+    "dev": "npm run build && npx --yes serve public -p 8788",
+    "deploy": "npm run build && wrangler pages deploy public --project-name=meme-api"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250407.0",
-    "typescript": "^5.8.3",
     "wrangler": "^4.6.0"
   }
 }
