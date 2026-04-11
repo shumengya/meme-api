@@ -536,7 +536,18 @@
       }
 
       function render(data) {
-        var origin = data.baseUrl || window.location.origin;
+        /** 可选 CDN 根；未设置时清单与 /meme 相对当前页面解析，支持子路径部署与本机 file:// 打开 */
+        var assetBase = data.baseUrl ? String(data.baseUrl).replace(/\/?$/, "") : "";
+        function memeAssetUrl(catId, fileName) {
+          var rel =
+            "../meme/" +
+            encodeURIComponent(catId) +
+            "/" +
+            encodeURIComponent(fileName);
+          return assetBase
+            ? assetBase + "/meme/" + encodeURIComponent(catId) + "/" + encodeURIComponent(fileName)
+            : new URL(rel, location.href).href;
+        }
         var categories = data.categories || [];
         if (!categories.length) {
           tabsEl.innerHTML = "";
@@ -601,13 +612,7 @@
           grid.className = "grid";
           for (let n = 0; n < items.length; n++) {
             const it = items[n];
-            const url =
-              it.url ||
-              origin +
-                "/meme/" +
-                encodeURIComponent(cat.id) +
-                "/" +
-                encodeURIComponent(it.file);
+            const url = it.url || memeAssetUrl(cat.id, it.file);
             const tile = document.createElement("button");
             tile.type = "button";
             tile.className = "tile";
@@ -642,7 +647,15 @@
         });
       }
 
-      fetch("/memes.json")
+      fetch(
+        (function () {
+          try {
+            return new URL("../memes.json", location.href).href;
+          } catch (e) {
+            return "/memes.json";
+          }
+        })()
+      )
         .then(function (r) {
           if (!r.ok) throw new Error("HTTP " + r.status);
           return r.json();

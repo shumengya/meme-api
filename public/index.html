@@ -17,7 +17,7 @@
 </head>
 <body>
   <h1>meme-api</h1>
-  <p class="muted">静态站点（<a href="https://pages.cloudflare.com/">Cloudflare Pages</a>）。素材在仓库 <code>原图/</code> 内编号生成 <code>*.webp</code> / <code>*.gif</code>；<code>npm run build</code> 将 <code>原图/</code> 镜像到 <code>public/meme/</code> 用于部署。直链可被外部引用；JSON 已配置 CORS。</p>
+  <p class="muted">静态站点（<a href="https://pages.cloudflare.com/">Cloudflare Pages</a>）。在 <code>原图/</code> 放未编号素材后运行 <code>python 转化.py</code>，输出到 <code>原图-已处理/</code>。将成品拷入 <code>public/meme/</code> 后运行 <code>npm run build</code>：只生成 <code>memes.json</code> 并把 <code>public/</code> 复制到 <code>dist/</code>，<strong>不会</strong>改写 <code>public/meme/</code>。清单默认按 <code>public/meme/</code> 扫描；若尚未拷素材则回退扫描 <code>原图-已处理/</code>（无则 <code>原图/</code>）。需强制按源目录生成清单时用 <code>npm run build:manifest-from-source</code>。部署目录为 <code>dist/</code>。直链可外部引用；JSON 已配置 CORS。</p>
   <p><a href="/memes/">浏览图库（分页、按文件夹分类、点击复制链接）</a></p>
 
   <h2>获取表情包列表</h2>
@@ -26,16 +26,17 @@
   <pre id="curl-memes">curl -sS ""</pre>
 
   <h2>直链访问单张表情包</h2>
-  <p>部署后文件在 <code>public/meme/&lt;分类&gt;/</code>（与仓库 <code>原图/&lt;分类&gt;/</code> 内容一致），对应 URL：</p>
+  <p>站点根目录对应构建产物 <code>dist/</code>（本地从 <code>public/</code> 同步而来）；表情文件在 <code>/meme/&lt;分类&gt;/</code>，对应 URL：</p>
   <p><code>GET /meme/&lt;分类&gt;/&lt;文件名&gt;.webp</code> 或 <code>.gif</code></p>
   <pre id="curl-example">https://example.com/meme/%E7%99%BD%E8%89%B2%E5%B0%8F%E4%BA%BA/1.webp</pre>
   <p class="muted">中文或多段路径请使用编码后的 URL（浏览器会自动处理，图库「复制链接」亦为已编码地址）。</p>
 
   <h2>维护流程</h2>
   <ol>
-    <li>在 <code>原图/&lt;分类&gt;/</code> 放入未编号素材；运行 <code>python convert_to_webp.py</code>（就地生成编号文件，成功后会<strong>删除</strong>这些未编号源图；若需保留源文件可加 <code>--keep-sources</code>）。</li>
-    <li>若仍有「动图 WebP」编号文件，可在 <code>原图/</code> 下运行 <code>python animated_webp_to_gif.py</code> 转为 <code>.gif</code>。</li>
-    <li><code>npm run build</code> 将 <code>原图/</code> 镜像到 <code>public/meme/</code> 并生成 <code>public/memes.json</code>，再部署 <code>public/</code>。</li>
+    <li>在 <code>原图/&lt;分类&gt;/</code> 放入未编号素材；运行 <code>python 转化.py</code>，在 <code>原图-已处理/</code> 生成编号 <code>.webp</code>/<code>.gif</code> 并限最长边（默认 300px）；默认<strong>保留</strong> <code>原图/</code> 源文件，清理可加 <code>--delete-sources</code>。</li>
+    <li>动图 WebP 会在 <code>python 转化.py</code> 转换流程中转为 GIF。</li>
+    <li><code>npm run build</code>：生成 <code>dist/</code>（含 <code>dist/memes.json</code>）。请先把 <code>原图-已处理/</code> 拷入 <code>public/meme/</code> 再构建；构建脚本不会覆盖 <code>public/meme/</code>。</li>
+    <li><strong>上线（生产）</strong>：项目在 Cloudflare 已连接 Git 时，由推送生产分支触发云端构建：<code>npm run build</code> → <code>git add/commit/push</code>；仪表盘「构建命令」填 <code>npm run build</code>，「构建输出目录」填 <code>dist</code>。<code>wrangler pages deploy dist</code> 在 Git 项目里常显示为<strong>预览</strong>，属正常。</li>
   </ol>
   <script>
     (function () {

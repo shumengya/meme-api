@@ -3,8 +3,11 @@
   "private": true,
   "scripts": {
     "build": "node scripts/generate-manifest.mjs",
-    "dev": "npm run build && npx --yes serve public -p 8788",
-    "deploy": "npm run build && wrangler pages deploy public --project-name=meme-api"
+    "build:manifest-from-source": "node scripts/generate-manifest.mjs --manifest-from-source",
+    "dev": "npm run build && npx --yes serve dist -p 8788",
+    "deploy": "npm run deploy:upload",
+    "deploy:upload": "npm run build && wrangler pages deploy dist --project-name=meme-api",
+    "deploy:preview": "npm run build && wrangler pages deploy dist --project-name=meme-api --branch preview"
   },
   "devDependencies": {
     "wrangler": "^4.6.0"
