@@ -1,1 +1,3 @@
 /api/v1/memes /memes.json 200
+/memes    /    301
+/memes/   /    301

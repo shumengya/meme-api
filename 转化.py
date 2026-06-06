@@ -2,8 +2,8 @@
 """
 一键：从 原图/ 读取素材 → 输出到 原图-已处理/（默认）。
 
-- 未编号、格式不符的：转为编号 .webp / .gif，并按最长边缩放（默认 300px）。
-- 已符合 N.webp / N.gif 的：原样复制到 原图-已处理/ 对应子目录，便于整夹迁移。
+- 未编号、格式不符的：转为编号 .webp / .gif，并按最长边缩放（默认 250px）。
+- 已符合 N.webp / N.gif 的：复制到 原图-已处理/ 后同样按最长边缩放（默认 250px）。
 
 默认保留 原图 中源文件；需清理可加 --delete-sources。依赖 Pillow。
 """
@@ -46,7 +46,7 @@ OUTPUT_NAME_RE = re.compile(r"^(\d+)\.(webp|gif)$", re.IGNORECASE)
 
 DEFAULT_SOURCE_DIR = Path("原图")
 DEFAULT_OUTPUT_DIR = Path("原图-已处理")
-DEFAULT_MAX_SIDE = 300
+DEFAULT_MAX_SIDE = 250
 DEFAULT_JOBS = 10
 
 _print_lock = threading.Lock()
@@ -480,6 +480,7 @@ def run_job(job: Job, max_side: int) -> tuple[bool, str, Path, str | None, str |
             out = job.target_dir / job.dest_name
             out.write_bytes(data)
             kind = _remove_source_if_any(job, out, "copy")
+            resize_output_if_needed(out, max_side)
             return True, job.source_label, out, kind, None
 
         if is_animated_gif(data):
@@ -511,7 +512,7 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         description=(
             "原图/ 下：未编号素材转为编号 .webp/.gif 并限最长边；"
-            "已符合 N.webp/N.gif 的复制到 原图-已处理/ 同结构。"
+            "已符合 N.webp/N.gif 的复制到 原图-已处理/ 后同样限最长边。"
             "默认读取 原图/、保留源文件。"
         )
     )
