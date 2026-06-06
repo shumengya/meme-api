@@ -17,7 +17,7 @@
 ## [1.0.0] - 2026-06-04
 
 ### 新增
-- 仓库首次**公开**整理：补齐 README、LICENSE、CONTRIBUTING、CHANGELOG、Issue / PR 模板
+- 仓库首次**公开**整理：补齐 README、LICENSE、CHANGELOG、Issue / PR 模板
 - 双协议声明：代码 MIT，表情包素材 CC BY-NC-SA 4.0
 - 收录 **51 个分类、~2600+ 张**表情包（WebP / GIF）
 - 图库前端（`public/index.html`）：分类侧边栏 + 搜索 + 移动端 4 列 / 桌面 12 列网格

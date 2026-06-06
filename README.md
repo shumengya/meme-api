@@ -13,7 +13,7 @@
 [![GitHub forks](https://img.shields.io/github/forks/shumengya/meme-api?style=flat-square)](https://github.com/shumengya/meme-api/network)
 [![Last commit](https://img.shields.io/github/last-commit/shumengya/meme-api?style=flat-square)](https://github.com/shumengya/meme-api/commits/main)
 
-[在线浏览](https://meme.smyhub.com) · [API 文档](https://meme.smyhub.com/readme/) · [投稿](#-投稿指南) · [更新日志](./CHANGELOG.md)
+[在线浏览](https://meme.smyhub.com) · [API 文档](https://meme.smyhub.com/readme/) · [更新日志](./CHANGELOG.md)
 
 </div>
 
@@ -235,15 +235,6 @@ meme-api/
 
 如果想换 CDN 域名，可以在前端 JS 里给 `memes.json` 加 `baseUrl` 字段（详见脚本注释）。
 
-## 🤝 投稿指南
-
-欢迎补充新分类、修复坏图、改善图库体验！开始前请先看 **[CONTRIBUTING.md](./CONTRIBUTING.md)**，重点：
-
-- 素材需是 **你自己有权分发** 的，或来源已明确允许
-- 分类目录用清晰中文名；编号脚本会自动续号
-- 一张图只发一个分类；动图尽量保留动画
-- 提交 PR 前跑一次 `npm run build` 自检
-
 ## 📝 更新日志
 
 见 [CHANGELOG.md](./CHANGELOG.md)。
@@ -258,12 +249,11 @@ meme-api/
 | **表情包素材**（`public/meme/` 下的所有 `.webp` / `.gif` 文件） | CC BY-NC-SA 4.0 | [ASSET_LICENSE.md](./ASSET_LICENSE.md) |
 
 简言之：代码随便用、商用随便；素材**署名 + 非商用 + 相同方式共享**。
-如果你投稿了素材，默认视为同意按 CC BY-NC-SA 4.0 发布；商用授权请单独联系。
 
 ## 🙏 致谢
 
-- 所有为这个图库添砖加瓦的[贡献者](https://github.com/shumengya/meme-api/graphs/contributors)
-- 各个表情包原图的原作者 / 出处方
+- [Cloudflare Pages](https://pages.cloudflare.com/) 提供静态托管
+- [Pillow](https://python-pillow.org/) 提供图片处理能力
 - [Cloudflare Pages](https://pages.cloudflare.com/) 提供静态托管
 - [Pillow](https://python-pillow.org/) 提供图片处理能力
 

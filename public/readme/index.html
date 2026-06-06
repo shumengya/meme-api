@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>API 说明 · 萌芽表情包图库</title>
+  <meta name="description" content="萌芽表情包图库的公开 API 文档：清单接口、单图直链、CORS 与维护流程。" />
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+        "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.6;
+    }
+    body {
+      max-width: 52rem;
+      margin: 2rem auto;
+      padding: 0 1.25rem 4rem;
+      word-break: break-word;
+    }
+    h1 { font-size: 1.55rem; margin: 0 0 0.25rem; }
+    h2 { font-size: 1.15rem; margin-top: 2rem; border-bottom: 1px solid color-mix(in oklab, CanvasText 18%, transparent); padding-bottom: 0.3rem; }
+    h3 { font-size: 1rem; margin-top: 1.25rem; }
+    code, pre, kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace; font-size: 0.92em; }
+    code { padding: 0.12em 0.36em; border-radius: 4px; background: color-mix(in oklab, Canvas 92%, CanvasText 8%); }
+    pre {
+      overflow: auto;
+      padding: 0.9rem 1rem;
+      border-radius: 8px;
+      background: color-mix(in oklab, Canvas 92%, CanvasText 8%);
+      line-height: 1.45;
+    }
+    pre code { padding: 0; background: transparent; }
+    a { color: inherit; }
+    a:hover { text-decoration: underline; }
+    .muted { opacity: 0.75; font-size: 0.92rem; }
+    .top-nav { display: flex; flex-wrap: wrap; gap: 0.25rem 0.85rem; font-size: 0.92rem; opacity: 0.82; margin-bottom: 0.5rem; }
+    .top-nav a { text-decoration: none; }
+    .top-nav a:hover { text-decoration: underline; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+    th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid color-mix(in oklab, CanvasText 14%, transparent); }
+    th { opacity: 0.78; }
+    .pill { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.78rem; background: color-mix(in oklab, Canvas 92%, CanvasText 8%); }
+    .pill.get { background: color-mix(in oklab, #16a34a 22%, Canvas); }
+    .badge { display: inline-block; padding: 0.05rem 0.4rem; border-radius: 4px; font-size: 0.78rem; background: color-mix(in oklab, Canvas 92%, CanvasText 8%); }
+    .kv { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; font-size: 0.92rem; }
+    .kv dt { font-weight: 600; }
+    .kv dd { margin: 0; opacity: 0.92; }
+    .toc { font-size: 0.9rem; padding: 0.6rem 0.9rem; border: 1px solid color-mix(in oklab, CanvasText 14%, transparent); border-radius: 8px; }
+    .toc ul { margin: 0.2rem 0 0; padding-left: 1.2rem; }
+  </style>
+</head>
+<body>
+  <nav class="top-nav">
+    <a href="/">← 返回图库</a>
+    <a href="https://github.com/shumengya/meme-api" rel="noopener">GitHub 仓库</a>
+    <a href="https://github.com/shumengya/meme-api/blob/main/README.md" rel="noopener">README</a>
+    <a href="https://github.com/shumengya/meme-api/blob/main/CHANGELOG.md" rel="noopener">更新日志</a>
+  </nav>
+
+  <h1>萌芽表情包图库 · API 说明</h1>
+  <p class="muted">
+    纯静态站点（<a href="https://pages.cloudflare.com/" rel="noopener">Cloudflare Pages</a>）。
+    所有接口都是 <strong>GET</strong>，JSON 接口已开启 CORS，可被任意网页 / 脚本调用。
+  </p>
+
+  <div class="toc">
+    <strong>目录</strong>
+    <ul>
+      <li><a href="#memes-json">1. 获取表情包清单</a></li>
+      <li><a href="#direct-link">2. 直链访问单张表情包</a></li>
+      <li><a href="#cors">3. CORS</a></li>
+      <li><a href="#workflow">4. 维护流程（仅项目维护者）</a></li>
+      <li><a href="#examples">5. 客户端示例</a></li>
+      <li><a href="#links">6. 相关链接</a></li>
+    </ul>
+  </div>
+
+  <h2 id="memes-json">1. 获取表情包清单</h2>
+  <p>
+    <span class="pill get">GET</span>
+    <code>/memes.json</code>
+    （旧版兼容：<code>/api/v1/memes</code>，内部 <code>_redirects</code> 映射为同一份 JSON）
+  </p>
+  <p>返回所有分类及文件相对路径；前端与脚本可用其拼接直链。</p>
+  <pre><code id="curl-memes">curl -sS ""</code></pre>
+  <h3>返回结构</h3>
+  <pre><code>{
+  "generatedAt": "2026-05-19T13:01:45.229Z",
+  "categories": [
+    {
+      "id": "白色小人",
+      "name": "白色小人",
+      "items": [
+        { "file": "1.webp",  "path": "白色小人/1.webp"  },
+        { "file": "2.webp",  "path": "白色小人/2.webp"  }
+      ]
+    }
+  ]
+}</code></pre>
+  <h3>字段说明</h3>
+  <dl class="kv">
+    <dt>generatedAt</dt><dd>清单生成时间，ISO 8601 UTC</dd>
+    <dt>categories[].id</dt><dd>分类目录名，URL 中需编码</dd>
+    <dt>categories[].name</dt><dd>展示名（当前与 id 相同）</dd>
+    <dt>items[].file</dt><dd>文件名，含扩展名 <code>.webp</code> / <code>.gif</code></dd>
+    <dt>items[].path</dt><dd><code>{分类}/{文件名}</code>，拼接成 <code>/meme/{path}</code> 即直链</dd>
+  </dl>
+
+  <h2 id="direct-link">2. 直链访问单张表情包</h2>
+  <p>站点根目录对应构建产物 <code>dist/</code>（本地从 <code>public/</code> 同步而来）；表情文件在 <code>/meme/&lt;分类&gt;/</code>，对应 URL：</p>
+  <p>
+    <span class="pill get">GET</span>
+    <code>/meme/&lt;分类&gt;/&lt;文件名&gt;.webp</code>
+    或
+    <code>.gif</code>
+  </p>
+  <pre><code id="curl-example">https://meme.smyhub.com/meme/%E7%99%BD%E8%89%B2%E5%B0%8F%E4%BA%BA/1.webp</code></pre>
+  <p class="muted">中文或多段路径请使用编码后的 URL（浏览器会自动处理；图库「复制链接」按钮已帮你编好）。</p>
+
+  <h3>响应头</h3>
+  <p>由 Cloudflare 边缘缓存，<code>Cache-Control: public, max-age=...</code>；按需可直接 <code>?v=&lt;时间戳&gt;</code> 绕过缓存。</p>
+
+  <h2 id="cors">3. CORS</h2>
+  <p>对 <code>/memes.json</code> 与 <code>/api/v1/memes</code> 已配置：</p>
+  <pre><code>Access-Control-Allow-Origin: *
+Access-Control-Allow-Methods: GET, HEAD, OPTIONS
+Access-Control-Allow-Headers: Content-Type</code></pre>
+  <p class="muted">图片资源 <code>/meme/...</code> 无 CORS 限制（普通 <code>&lt;img&gt;</code> / <code>&lt;a&gt;</code> 引用即可）。</p>
+
+  <h2 id="workflow">4. 维护流程（仅项目维护者）</h2>
+  <ol>
+    <li>在 <code>原图/&lt;分类&gt;/</code> 放入未编号素材；运行 <code>python 转化.py</code>，在 <code>原图-已处理/</code> 生成编号 <code>.webp</code> / <code>.gif</code> 并限最长边（默认 250px）。默认<strong>保留</strong> <code>原图/</code> 源文件，清理可加 <code>--delete-sources</code>。</li>
+    <li>动图 WebP 会在 <code>python 转化.py</code> 转换流程中转为 GIF。</li>
+    <li><code>npm run build</code>：生成 <code>dist/</code>（含 <code>dist/memes.json</code>）。请先把 <code>原图-已处理/</code> 拷入 <code>public/meme/</code> 再构建；构建脚本<strong>不会</strong>覆盖 <code>public/meme/</code>。</li>
+    <li><strong>上线（生产）</strong>：项目在 Cloudflare 已连接 Git 时，由推送生产分支触发云端构建：<code>npm run build</code> → <code>git add/commit/push</code>；仪表盘「构建命令」填 <code>npm run build</code>，「构建输出目录」填 <code>dist</code>。<code>wrangler pages deploy dist</code> 在 Git 项目里常显示为<strong>预览</strong>，属正常。</li>
+  </ol>
+  <h2 id="examples">5. 客户端示例</h2>
+
+  <h3>JavaScript (浏览器 / Node 18+)</h3>
+  <pre><code>// 拉清单
+const r = await fetch("https://meme.smyhub.com/memes.json");
+const { categories } = await r.json();
+
+// 随机抽一张
+const cat = categories[Math.floor(Math.random() * categories.length)];
+const it  = cat.items[Math.floor(Math.random() * cat.items.length)];
+const url = `https://meme.smyhub.com/meme/${encodeURIComponent(cat.id)}/${encodeURIComponent(it.file)}`;
+console.log(url);</code></pre>
+
+  <h3>Python</h3>
+  <pre><code>import json, random, urllib.parse, urllib.request
+
+with urllib.request.urlopen("https://meme.smyhub.com/memes.json") as r:
+    data = json.load(r)
+
+cat = random.choice(data["categories"])
+it  = random.choice(cat["items"])
+url = f"https://meme.smyhub.com/meme/{urllib.parse.quote(cat['id'])}/{urllib.parse.quote(it['file'])}"
+print(url)</code></pre>
+
+  <h3>Markdown / HTML 嵌入</h3>
+  <pre><code>![哈哈](https://meme.smyhub.com/meme/%E7%99%BD%E8%89%B2%E5%B0%8F%E4%BA%BA/1.webp)
+
+&lt;img src="https://meme.smyhub.com/meme/%E7%99%BD%E8%89%B2%E5%B0%8F%E4%BA%BA/1.webp"
+     alt="哈哈" loading="lazy" width="240"
+     style="max-width:240px;width:100%;height:auto" /&gt;</code></pre>
+
+  <h2 id="links">6. 相关链接</h2>
+  <ul>
+    <li>🌐 在线图库：<a href="https://meme.smyhub.com/" rel="noopener">meme.smyhub.com</a></li>
+    <li>📦 仓库：<a href="https://github.com/shumengya/meme-api" rel="noopener">github.com/shumengya/meme-api</a></li>
+    <li>📝 README：<a href="https://github.com/shumengya/meme-api/blob/main/README.md" rel="noopener">README.md</a></li>
+    <li>🪧 协议：代码 <a href="https://github.com/shumengya/meme-api/blob/main/LICENSE" rel="noopener">MIT</a>，素材 <a href="https://github.com/shumengya/meme-api/blob/main/ASSET_LICENSE.md" rel="noopener">CC BY-NC-SA 4.0</a></li>
+  </ul>
+
+  <script>
+    (function () {
+      var o = window.location.origin;
+      document.title = "API 说明 · " + o.replace(/^https?:\/\//, "");
+      var base = o || "https://meme.smyhub.com";
+      var memesEl = document.getElementById("curl-memes");
+      var exEl = document.getElementById("curl-example");
+      if (memesEl) memesEl.textContent = 'curl -sS "' + base + '/memes.json"';
+      if (exEl)
+        exEl.textContent =
+          base + "/meme/" + encodeURIComponent("白色小人") + "/" + encodeURIComponent("1.webp");
+    })();
+  </script>
+</body>
+</html>

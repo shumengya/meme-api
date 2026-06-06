@@ -3,48 +3,952 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>meme-api</title>
+  <title>萌芽表情包图库(=・ω・=)</title>
+  <meta name="description" content="一个公开的表情包图库与 API：分类浏览、一键复制链接 / Markdown / HTML，51 个分类共 2600+ 张 WebP / GIF。" />
+  <meta name="theme-color" content="#FFCC4D" />
+  <meta property="og:title" content="萌芽表情包图库" />
+  <meta property="og:description" content="一个公开的表情包图库与 API：分类浏览、一键复制链接 / Markdown / HTML。" />
+  <meta property="og:type" content="website" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FFCC4D'/><text x='50' y='74' text-anchor='middle' font-size='72' font-family='sans-serif' fill='%23000'>萌</text></svg>" />
   <style>
-    :root { color-scheme: light dark; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC","Microsoft YaHei", sans-serif; line-height: 1.55; }
-    body { max-width: 52rem; margin: 2rem auto; padding: 0 1.25rem; }
-    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
-    pre { overflow: auto; padding: 0.9rem 1rem; border-radius: 8px; background: color-mix(in oklab, Canvas 92%, CanvasText 8%); }
-    a { color: inherit; }
-    h1 { font-size: 1.35rem; }
-    h2 { font-size: 1.05rem; margin-top: 1.75rem; }
-    .muted { opacity: 0.78; font-size: 0.92rem; }
+    :root {
+      color-scheme: light dark;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+        "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.45;
+      --bg: Canvas;
+      --fg: CanvasText;
+      --card: color-mix(in oklab, Canvas 94%, CanvasText 6%);
+      --border: color-mix(in oklab, Canvas 82%, CanvasText 18%);
+      --accent: color-mix(in oklab, CanvasText 12%, Canvas 88%);
+      --sidebar-w: 15rem;
+      --sidebar-w-collapsed: 2.75rem;
+      --topbar-h: 4.25rem;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    body.sidebar-collapsed {
+      --sidebar-w: var(--sidebar-w-collapsed);
+    }
+    .top-bar {
+      flex-shrink: 0;
+      padding: 0.85rem clamp(0.75rem, 2vw, 1.25rem);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: color-mix(in oklab, var(--bg) 88%, transparent);
+      backdrop-filter: blur(10px);
+      z-index: 4;
+    }
+    .top-bar h1 {
+      font-size: 1.2rem;
+      margin: 0 0 0.25rem;
+      font-weight: 650;
+    }
+    .sub {
+      margin: 0;
+      font-size: 0.9rem;
+      opacity: 0.78;
+    }
+    .sub a {
+      color: inherit;
+    }
+    .layout {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      align-items: stretch;
+    }
+    .sidebar {
+      flex: 0 0 var(--sidebar-w);
+      width: var(--sidebar-w);
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      background: color-mix(in oklab, var(--bg) 96%, CanvasText 4%);
+      position: sticky;
+      top: var(--topbar-h);
+      height: calc(100vh - var(--topbar-h));
+      transition: width 0.22s ease, flex-basis 0.22s ease;
+      overflow: hidden;
+      z-index: 3;
+    }
+    .sidebar-head {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.5rem 0.45rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-toggle {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+      font-size: 1.1rem;
+      line-height: 1;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .sidebar-toggle:hover {
+      background: color-mix(in oklab, var(--accent) 65%, transparent);
+    }
+    .sidebar-toggle:focus-visible {
+      outline: 2px solid color-mix(in oklab, CanvasText 40%, transparent);
+      outline-offset: 2px;
+    }
+    .sidebar-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      opacity: 0.72;
+      white-space: nowrap;
+      overflow: hidden;
+      transition: opacity 0.15s ease;
+    }
+    body.sidebar-collapsed .sidebar-title {
+      opacity: 0;
+      width: 0;
+      overflow: hidden;
+    }
+    .sidebar-search {
+      flex-shrink: 0;
+      padding: 0 0.45rem 0.4rem;
+    }
+    body.sidebar-collapsed .sidebar-search {
+      display: none;
+    }
+    .cat-search-input {
+      width: 100%;
+      box-sizing: border-box;
+      font: inherit;
+      font-size: 0.82rem;
+      padding: 0.38rem 0.55rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: inherit;
+    }
+    .cat-search-input::placeholder {
+      opacity: 0.55;
+    }
+    .cat-search-input:focus {
+      outline: 2px solid color-mix(in oklab, CanvasText 28%, transparent);
+      outline-offset: 1px;
+    }
+    .cat-tabs-empty {
+      margin: 0.25rem 0.5rem;
+      font-size: 0.82rem;
+      opacity: 0.65;
+    }
+    .cat-tabs {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 0.45rem;
+      margin: 0;
+      scrollbar-width: thin;
+      -webkit-overflow-scrolling: touch;
+    }
+    .cat-tab {
+      flex: 0 0 auto;
+      width: 100%;
+      box-sizing: border-box;
+      font: inherit;
+      font-size: 0.84rem;
+      padding: 0.42rem 0.55rem;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: background 0.12s ease, border-color 0.12s ease, opacity 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body.sidebar-collapsed .cat-tab {
+      opacity: 0;
+      pointer-events: none;
+      height: 0;
+      padding: 0;
+      margin: 0;
+      border: none;
+      overflow: hidden;
+    }
+    .cat-tab:hover {
+      background: color-mix(in oklab, var(--accent) 65%, transparent);
+    }
+    .cat-tab[aria-selected="true"] {
+      font-weight: 650;
+      border-color: color-mix(in oklab, CanvasText 22%, var(--border));
+      background: color-mix(in oklab, var(--accent) 100%, transparent);
+    }
+    .cat-tab:focus-visible {
+      outline: 2px solid color-mix(in oklab, CanvasText 40%, transparent);
+      outline-offset: 2px;
+    }
+    .content {
+      flex: 1;
+      min-width: 0;
+    }
+    main {
+      padding: 1.25rem clamp(0.5rem, 2vw, 1rem) 3rem;
+      max-width: none;
+      margin: 0 auto;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: var(--topbar-h) 0 0 0;
+      z-index: 2;
+      border: none;
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      background: color-mix(in oklab, CanvasText 32%, transparent);
+      cursor: pointer;
+    }
+    @media (max-width: 640px) {
+      :root {
+        --sidebar-w: min(78vw, 15rem);
+      }
+      .layout {
+        display: block;
+      }
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: var(--topbar-h);
+        flex: none;
+      }
+      body.sidebar-collapsed .sidebar {
+        box-shadow: none;
+      }
+      body:not(.sidebar-collapsed) .sidebar {
+        box-shadow: 4px 0 24px color-mix(in oklab, CanvasText 18%, transparent);
+      }
+      body:not(.sidebar-collapsed) .sidebar-overlay {
+        display: block;
+      }
+      .content {
+        width: 100%;
+      }
+    }
+    /* 手机：每行固定 4 列 */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.4rem 0.35rem;
+    }
+    /* 电脑：每行最多 12 列，占满可用宽度 */
+    @media (min-width: 769px) {
+      .grid {
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 0.55rem 0.5rem;
+      }
+    }
+    .tile {
+      display: block;
+      width: 100%;
+      border: none;
+      margin: 0;
+      padding: 0;
+      border-radius: 0;
+      background: transparent;
+      cursor: pointer;
+      text-align: center;
+      transition: opacity 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tile:hover {
+      opacity: 0.88;
+    }
+    .tile:focus-visible {
+      outline: 2px solid color-mix(in oklab, CanvasText 40%, transparent);
+      outline-offset: 3px;
+    }
+    .tile img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1;
+      height: auto;
+      object-fit: contain;
+      vertical-align: middle;
+      border-radius: 0;
+      background: transparent;
+    }
+    .tile .label {
+      margin-top: 0.2rem;
+      font-size: 0.68rem;
+      opacity: 0.55;
+      word-break: break-all;
+      line-height: 1.2;
+    }
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 1.25rem;
+      transform: translateX(-50%) translateY(120%);
+      opacity: 0;
+      padding: 0.6rem 1rem;
+      border-radius: 10px;
+      background: color-mix(in oklab, CanvasText 88%, Canvas 12%);
+      color: Canvas;
+      font-size: 0.9rem;
+      transition: transform 0.22s ease, opacity 0.22s ease;
+      z-index: 9;
+      pointer-events: none;
+      max-width: min(92vw, 420px);
+      text-align: center;
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    .error {
+      padding: 1rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
+    .empty {
+      opacity: 0.8;
+      padding: 1rem 0;
+    }
+    .sheet-root {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: env(safe-area-inset-bottom, 0) 0.75rem 0.75rem;
+      box-sizing: border-box;
+    }
+    .sheet-root[hidden] {
+      display: none !important;
+    }
+    .sheet-backdrop {
+      position: absolute;
+      inset: 0;
+      background: color-mix(in oklab, CanvasText 38%, transparent);
+      border: none;
+      padding: 0;
+      cursor: pointer;
+    }
+    .sheet-panel {
+      position: relative;
+      width: min(22rem, 100%);
+      max-height: min(85vh, 28rem);
+      overflow: auto;
+      border-radius: 14px 14px 0 0;
+      background: var(--bg);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      box-shadow: 0 -8px 32px color-mix(in oklab, CanvasText 22%, transparent);
+      padding: 0.65rem 0;
+      margin-bottom: 0;
+    }
+    @media (min-width: 480px) {
+      .sheet-root {
+        align-items: center;
+        padding: 1rem;
+      }
+      .sheet-panel {
+        border-radius: 14px;
+        margin-bottom: 0;
+      }
+    }
+    .sheet-title {
+      margin: 0;
+      padding: 0.35rem 1rem 0.65rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      opacity: 0.85;
+      word-break: break-all;
+      border-bottom: 1px solid var(--border);
+    }
+    .sheet-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      font: inherit;
+      font-size: 0.95rem;
+      padding: 0.75rem 1rem;
+      border: none;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      transition: background 0.12s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .sheet-btn:hover,
+    .sheet-btn:focus-visible {
+      background: color-mix(in oklab, var(--accent) 85%, transparent);
+    }
+    .sheet-btn:active {
+      opacity: 0.92;
+    }
+    .sheet-cancel {
+      margin-top: 0.25rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-weight: 500;
+      opacity: 0.78;
+    }
+    .sheet-size-bar {
+      padding: 0.5rem 1rem 0.65rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .sheet-size-label {
+      display: block;
+      font-size: 0.72rem;
+      opacity: 0.68;
+      margin-bottom: 0.45rem;
+    }
+    .sheet-size-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+    .sheet-size-btn {
+      font: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.35rem 0.55rem;
+      min-width: 2.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .sheet-size-btn.is-active {
+      border-color: color-mix(in oklab, CanvasText 28%, var(--border));
+      background: color-mix(in oklab, var(--accent) 100%, transparent);
+    }
+    .sheet-size-btn:focus-visible {
+      outline: 2px solid color-mix(in oklab, CanvasText 40%, transparent);
+      outline-offset: 2px;
+    }
   </style>
 </head>
 <body>
-  <h1>meme-api</h1>
-  <p class="muted">静态站点（<a href="https://pages.cloudflare.com/">Cloudflare Pages</a>）。在 <code>原图/</code> 放未编号素材后运行 <code>python 转化.py</code>，输出到 <code>原图-已处理/</code>。将成品拷入 <code>public/meme/</code> 后运行 <code>npm run build</code>：只生成 <code>memes.json</code> 并把 <code>public/</code> 复制到 <code>dist/</code>，<strong>不会</strong>改写 <code>public/meme/</code>。清单默认按 <code>public/meme/</code> 扫描；若尚未拷素材则回退扫描 <code>原图-已处理/</code>（无则 <code>原图/</code>）。需强制按源目录生成清单时用 <code>npm run build:manifest-from-source</code>。部署目录为 <code>dist/</code>。直链可外部引用；JSON 已配置 CORS。</p>
-  <p><a href="/memes/">浏览图库（分页、按文件夹分类、点击复制链接）</a></p>
-
-  <h2>获取表情包列表</h2>
-  <p><code>GET /memes.json</code>（与旧版兼容：<code>GET /api/v1/memes</code>，内部映射为同一份 JSON）</p>
-  <p>返回所有分类及文件相对路径；前端与脚本可用其拼接直链。</p>
-  <pre id="curl-memes">curl -sS ""</pre>
-
-  <h2>直链访问单张表情包</h2>
-  <p>站点根目录对应构建产物 <code>dist/</code>（本地从 <code>public/</code> 同步而来）；表情文件在 <code>/meme/&lt;分类&gt;/</code>，对应 URL：</p>
-  <p><code>GET /meme/&lt;分类&gt;/&lt;文件名&gt;.webp</code> 或 <code>.gif</code></p>
-  <pre id="curl-example">https://example.com/meme/%E7%99%BD%E8%89%B2%E5%B0%8F%E4%BA%BA/1.webp</pre>
-  <p class="muted">中文或多段路径请使用编码后的 URL（浏览器会自动处理，图库「复制链接」亦为已编码地址）。</p>
-
-  <h2>维护流程</h2>
-  <ol>
-    <li>在 <code>原图/&lt;分类&gt;/</code> 放入未编号素材；运行 <code>python 转化.py</code>，在 <code>原图-已处理/</code> 生成编号 <code>.webp</code>/<code>.gif</code> 并限最长边（默认 300px）；默认<strong>保留</strong> <code>原图/</code> 源文件，清理可加 <code>--delete-sources</code>。</li>
-    <li>动图 WebP 会在 <code>python 转化.py</code> 转换流程中转为 GIF。</li>
-    <li><code>npm run build</code>：生成 <code>dist/</code>（含 <code>dist/memes.json</code>）。请先把 <code>原图-已处理/</code> 拷入 <code>public/meme/</code> 再构建；构建脚本不会覆盖 <code>public/meme/</code>。</li>
-    <li><strong>上线（生产）</strong>：项目在 Cloudflare 已连接 Git 时，由推送生产分支触发云端构建：<code>npm run build</code> → <code>git add/commit/push</code>；仪表盘「构建命令」填 <code>npm run build</code>，「构建输出目录」填 <code>dist</code>。<code>wrangler pages deploy dist</code> 在 Git 项目里常显示为<strong>预览</strong>，属正常。</li>
-  </ol>
+  <header class="top-bar">
+    <h1>萌芽表情包图库ﾍ(=^･ω･^=)ﾉ</h1>
+    <p class="sub">
+      <a href="/readme/">说明</a>
+      ·
+      <a href="/memes.json"><code>memes.json</code></a>
+      ·
+      <a href="https://github.com/shumengya/meme-api" rel="noopener" target="_blank">GitHub</a>
+    </p>
+  </header>
+  <button type="button" class="sidebar-overlay" id="sidebar-overlay" hidden aria-label="关闭分类"></button>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-head">
+        <button
+          type="button"
+          class="sidebar-toggle"
+          id="sidebar-toggle"
+          aria-expanded="true"
+          aria-controls="cat-tabs"
+          title="收起分类"
+        >
+          <span aria-hidden="true">‹</span>
+        </button>
+        <span class="sidebar-title">分类</span>
+      </div>
+      <div class="sidebar-search">
+        <input
+          type="search"
+          class="cat-search-input"
+          id="cat-search"
+          placeholder="搜索分类…"
+          autocomplete="off"
+          enterkeyhint="search"
+        />
+      </div>
+      <nav class="cat-tabs" id="cat-tabs" role="tablist" aria-label="表情包分类"></nav>
+    </aside>
+    <div class="content">
+      <main id="app">
+        <p class="empty">加载中…</p>
+      </main>
+    </div>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="sheet-root" class="sheet-root" hidden>
+    <button type="button" class="sheet-backdrop" id="sheet-backdrop" aria-label="关闭"></button>
+    <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+      <p id="sheet-title" class="sheet-title"></p>
+      <button type="button" class="sheet-btn" id="act-url">复制 url链接</button>
+      <button type="button" class="sheet-btn" id="act-md">复制 Markdown</button>
+      <div class="sheet-size-bar" id="sheet-size-bar" role="group" aria-label="HTML 宽度">
+        <span class="sheet-size-label">HTML 宽度</span>
+        <div class="sheet-size-btns">
+          <button type="button" class="sheet-size-btn" data-w="96" aria-pressed="false">96</button>
+          <button type="button" class="sheet-size-btn" data-w="128" aria-pressed="false">128</button>
+          <button type="button" class="sheet-size-btn" data-w="160" aria-pressed="false">160</button>
+          <button type="button" class="sheet-size-btn" data-w="200" aria-pressed="false">200</button>
+          <button type="button" class="sheet-size-btn" data-w="240" aria-pressed="false">240</button>
+          <button type="button" class="sheet-size-btn" data-w="280" aria-pressed="false">280</button>
+          <button type="button" class="sheet-size-btn" data-w="320" aria-pressed="false">320</button>
+          <button type="button" class="sheet-size-btn" data-w="400" aria-pressed="false">400</button>
+          <button type="button" class="sheet-size-btn" data-w="original" aria-pressed="false">原图</button>
+        </div>
+      </div>
+      <button type="button" class="sheet-btn" id="act-html">复制 HTML</button>
+      <button type="button" class="sheet-btn" id="act-download">下载</button>
+      <button type="button" class="sheet-btn sheet-cancel" id="act-close">取消</button>
+    </div>
+  </div>
   <script>
     (function () {
-      var o = window.location.origin;
-      document.title = "meme-api · " + o.replace(/^https?:\/\//, "");
-      document.getElementById("curl-memes").textContent = 'curl -sS "' + o + '/memes.json"';
-      document.getElementById("curl-example").textContent =
-        o + "/meme/" + encodeURIComponent("白色小人") + "/" + encodeURIComponent("1.webp");
+      const app = document.getElementById("app");
+      const tabsEl = document.getElementById("cat-tabs");
+      const sidebarToggle = document.getElementById("sidebar-toggle");
+      const sidebarOverlay = document.getElementById("sidebar-overlay");
+      const toastEl = document.getElementById("toast");
+      var SIDEBAR_KEY = "meme_sidebar_collapsed";
+      var categoryFilter = "";
+
+      function toAbsoluteUrl(url) {
+        if (!url) return url;
+        if (/^https?:\/\//i.test(url)) return url;
+        try {
+          return new URL(url, location.href).href;
+        } catch (e) {
+          return url;
+        }
+      }
+
+      function isSidebarCollapsed() {
+        return document.body.classList.contains("sidebar-collapsed");
+      }
+
+      function syncSidebarUI() {
+        if (!sidebarToggle) return;
+        var collapsed = isSidebarCollapsed();
+        sidebarToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        sidebarToggle.title = collapsed ? "展开分类" : "收起分类";
+        var icon = sidebarToggle.querySelector("span");
+        if (icon) icon.textContent = collapsed ? "›" : "‹";
+        if (sidebarOverlay) sidebarOverlay.hidden = collapsed;
+      }
+
+      function setSidebarCollapsed(collapsed) {
+        document.body.classList.toggle("sidebar-collapsed", collapsed);
+        syncSidebarUI();
+        try {
+          localStorage.setItem(SIDEBAR_KEY, collapsed ? "1" : "0");
+        } catch (e) {}
+      }
+
+      function loadSidebar() {
+        var collapsed = false;
+        try {
+          if (window.matchMedia("(max-width: 640px)").matches) {
+            collapsed = localStorage.getItem(SIDEBAR_KEY) !== "0";
+          } else {
+            collapsed = localStorage.getItem(SIDEBAR_KEY) === "1";
+          }
+        } catch (e) {
+          collapsed = window.matchMedia("(max-width: 640px)").matches;
+        }
+        setSidebarCollapsed(collapsed);
+      }
+
+      if (sidebarToggle) {
+        sidebarToggle.addEventListener("click", function () {
+          setSidebarCollapsed(!isSidebarCollapsed());
+        });
+      }
+      if (sidebarOverlay) {
+        sidebarOverlay.addEventListener("click", function () {
+          setSidebarCollapsed(true);
+        });
+      }
+      loadSidebar();
+      const sheetRoot = document.getElementById("sheet-root");
+      const sheetTitle = document.getElementById("sheet-title");
+      const sheetBackdrop = document.getElementById("sheet-backdrop");
+      /** @type {{ url: string; file: string; category: string } | null} */
+      var sheetCtx = null;
+      /** @type {number | null} null = 原图尺寸 */
+      var selectedWidthPx = 240;
+      var WIDTH_STORAGE = "meme_copy_img_width";
+      var VALID_HTML_WIDTHS = [96, 128, 160, 200, 240, 280, 320, 400];
+
+      function loadSavedWidth() {
+        try {
+          var v = localStorage.getItem(WIDTH_STORAGE);
+          if (v === "original") selectedWidthPx = null;
+          else {
+            var n = parseInt(v, 10);
+            selectedWidthPx =
+              VALID_HTML_WIDTHS.indexOf(n) >= 0 ? n : 240;
+          }
+        } catch (e) {
+          selectedWidthPx = 240;
+        }
+      }
+
+      function persistWidth() {
+        try {
+          localStorage.setItem(
+            WIDTH_STORAGE,
+            selectedWidthPx == null ? "original" : String(selectedWidthPx)
+          );
+        } catch (e) {}
+      }
+
+      function syncSizeBarUI() {
+        var bar = document.getElementById("sheet-size-bar");
+        if (!bar) return;
+        bar.querySelectorAll(".sheet-size-btn").forEach(function (btn) {
+          var w = btn.getAttribute("data-w");
+          var active =
+            (w === "original" && selectedWidthPx == null) ||
+            (w !== "original" && parseInt(w, 10) === selectedWidthPx);
+          btn.classList.toggle("is-active", active);
+          btn.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+      }
+
+      function wireSizeBar() {
+        document.querySelectorAll("#sheet-size-bar .sheet-size-btn").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var w = btn.getAttribute("data-w");
+            selectedWidthPx = w === "original" ? null : parseInt(w, 10);
+            persistWidth();
+            syncSizeBarUI();
+          });
+        });
+      }
+      loadSavedWidth();
+      wireSizeBar();
+      syncSizeBarUI();
+
+      function showToast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add("show");
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(function () {
+          toastEl.classList.remove("show");
+        }, 2200);
+      }
+
+      async function copyText(text, toastMsg) {
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast(toastMsg || "已复制到剪贴板");
+        } catch {
+          window.prompt("请手动复制：", text);
+        }
+      }
+
+      function escapeAttr(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/"/g, "&quot;")
+          .replace(/</g, "&lt;");
+      }
+
+      function markdownImage(url, alt) {
+        var a = String(alt || "表情").replace(/\]/g, "");
+        return "![" + a + "](" + url + ")";
+      }
+
+      function htmlEmbed(url, alt, widthPx) {
+        var parts =
+          '<img src="' +
+          escapeAttr(url) +
+          '" alt="' +
+          escapeAttr(alt || "") +
+          '" loading="lazy" draggable="false"';
+        if (widthPx != null) {
+          parts +=
+            ' width="' +
+            widthPx +
+            '" style="max-width:' +
+            widthPx +
+            'px;width:100%;height:auto"';
+        }
+        return parts + " />";
+      }
+
+      function openSheet(url, file, category) {
+        sheetCtx = {
+          url: toAbsoluteUrl(url),
+          file: file,
+          category: category,
+        };
+        sheetTitle.textContent = (category ? category + " / " : "") + file;
+        syncSizeBarUI();
+        sheetRoot.hidden = false;
+        document.body.style.overflow = "hidden";
+      }
+
+      function closeSheet() {
+        sheetRoot.hidden = true;
+        document.body.style.overflow = "";
+        sheetCtx = null;
+      }
+
+      function wireSheetActions() {
+        sheetBackdrop.addEventListener("click", closeSheet);
+        document.getElementById("act-close").addEventListener("click", closeSheet);
+        document.getElementById("act-url").addEventListener("click", function () {
+          if (!sheetCtx) return;
+          copyText(sheetCtx.url, "已复制链接");
+          closeSheet();
+        });
+        document.getElementById("act-md").addEventListener("click", function () {
+          if (!sheetCtx) return;
+          var alt = sheetCtx.category + "/" + sheetCtx.file;
+          copyText(markdownImage(sheetCtx.url, alt), "已复制 Markdown");
+          closeSheet();
+        });
+        document.getElementById("act-html").addEventListener("click", function () {
+          if (!sheetCtx) return;
+          var alt = sheetCtx.category + "/" + sheetCtx.file;
+          var tip =
+            selectedWidthPx == null ? "已复制 HTML" : "已复制 HTML（" + selectedWidthPx + "px）";
+          copyText(htmlEmbed(sheetCtx.url, alt, selectedWidthPx), tip);
+          closeSheet();
+        });
+        document.getElementById("act-download").addEventListener("click", function () {
+          if (!sheetCtx) return;
+          var u = sheetCtx.url;
+          var name = sheetCtx.file;
+          closeSheet();
+          (async function () {
+            try {
+              var res = await fetch(u);
+              if (!res.ok) throw new Error("HTTP " + res.status);
+              var blob = await res.blob();
+              var objectUrl = URL.createObjectURL(blob);
+              var a = document.createElement("a");
+              a.href = objectUrl;
+              a.download = name;
+              a.rel = "noopener";
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              URL.revokeObjectURL(objectUrl);
+              showToast("已开始下载");
+            } catch (e) {
+              var link = document.createElement("a");
+              link.href = u;
+              link.download = name;
+              link.rel = "noopener";
+              link.target = "_blank";
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+              showToast("已尝试下载");
+            }
+          })();
+        });
+        document.addEventListener("keydown", function (ev) {
+          if (ev.key === "Escape" && !sheetRoot.hidden) closeSheet();
+        });
+      }
+      wireSheetActions();
+
+      function readHashCategory() {
+        var raw = location.hash.replace(/^#/, "");
+        if (!raw) return null;
+        try {
+          return decodeURIComponent(raw);
+        } catch (e) {
+          return raw;
+        }
+      }
+
+      function setHashCategory(id) {
+        var enc = encodeURIComponent(id);
+        if (location.hash !== "#" + enc) {
+          history.replaceState(null, "", "#" + enc);
+        }
+      }
+
+      function render(data) {
+        /** 可选 CDN 根；未设置时清单与 /meme 相对当前页面解析，支持子路径部署与本机 file:// 打开 */
+        var assetBase = data.baseUrl ? String(data.baseUrl).replace(/\/?$/, "") : "";
+        function memeAssetUrl(catId, fileName) {
+          var path =
+            "/meme/" +
+            encodeURIComponent(catId) +
+            "/" +
+            encodeURIComponent(fileName);
+          return toAbsoluteUrl(assetBase ? assetBase + path : path);
+        }
+        var categories = data.categories || [];
+        if (!categories.length) {
+          tabsEl.innerHTML = "";
+          app.innerHTML =
+            '<div class="empty">暂无数据。构建并部署后可在此查看。</div>';
+          return;
+        }
+
+        var selectedId = readHashCategory();
+        var validIds = {};
+        for (var i = 0; i < categories.length; i++) {
+          validIds[categories[i].id] = true;
+        }
+        if (!selectedId || !validIds[selectedId]) {
+          selectedId = categories[0].id;
+          setHashCategory(selectedId);
+        }
+
+        function findCategory(id) {
+          for (var j = 0; j < categories.length; j++) {
+            if (categories[j].id === id) return categories[j];
+          }
+          return categories[0];
+        }
+
+        var catSearchEl = document.getElementById("cat-search");
+
+        function renderTabs() {
+          tabsEl.innerHTML = "";
+          var q = categoryFilter.trim().toLowerCase();
+          var visible = 0;
+          for (var k = 0; k < categories.length; k++) {
+            var cat = categories[k];
+            if (q) {
+              var hay = ((cat.name || "") + " " + cat.id).toLowerCase();
+              if (hay.indexOf(q) < 0) continue;
+            }
+            visible++;
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "cat-tab";
+            btn.setAttribute("role", "tab");
+            btn.setAttribute("aria-selected", cat.id === selectedId ? "true" : "false");
+            btn.textContent = (cat.name || cat.id) + " · " + (cat.items || []).length;
+            btn.addEventListener(
+              "click",
+              (function (id) {
+                return function () {
+                  if (selectedId === id) return;
+                  selectedId = id;
+                  setHashCategory(id);
+                  renderTabs();
+                  renderGrid();
+                  if (window.matchMedia("(max-width: 640px)").matches) {
+                    setSidebarCollapsed(true);
+                  }
+                };
+              })(cat.id)
+            );
+            tabsEl.appendChild(btn);
+          }
+          if (q && visible === 0) {
+            var empty = document.createElement("p");
+            empty.className = "cat-tabs-empty";
+            empty.textContent = "无匹配分类";
+            tabsEl.appendChild(empty);
+          }
+          var selectedBtn = tabsEl.querySelector('[aria-selected="true"]');
+          if (selectedBtn) {
+            selectedBtn.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          }
+        }
+
+        if (catSearchEl && !catSearchEl._wired) {
+          catSearchEl._wired = true;
+          catSearchEl.addEventListener("input", function () {
+            categoryFilter = catSearchEl.value;
+            if (categoryFilter.trim() && isSidebarCollapsed()) {
+              setSidebarCollapsed(false);
+            }
+            renderTabs();
+          });
+        }
+
+        function renderGrid() {
+          var cat = findCategory(selectedId);
+          var items = cat.items || [];
+          app.innerHTML = "";
+
+          var grid = document.createElement("div");
+          grid.className = "grid";
+          for (let n = 0; n < items.length; n++) {
+            const it = items[n];
+            const url = toAbsoluteUrl(it.url || memeAssetUrl(cat.id, it.file));
+            const tile = document.createElement("button");
+            tile.type = "button";
+            tile.className = "tile";
+            tile.title = it.file;
+            const img = document.createElement("img");
+            img.loading = "lazy";
+            img.alt = it.file;
+            img.src = url;
+            tile.appendChild(img);
+            const label = document.createElement("div");
+            label.className = "label";
+            label.textContent = it.file;
+            tile.appendChild(label);
+            tile.addEventListener("click", function () {
+              openSheet(url, it.file, cat.name || cat.id);
+            });
+            grid.appendChild(tile);
+          }
+          app.appendChild(grid);
+        }
+
+        renderTabs();
+        renderGrid();
+
+        window.addEventListener("hashchange", function () {
+          var hid = readHashCategory();
+          if (hid && validIds[hid] && hid !== selectedId) {
+            selectedId = hid;
+            renderTabs();
+            renderGrid();
+          }
+        });
+      }
+
+      fetch("/memes.json")
+        .then(function (r) {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        })
+        .then(render)
+        .catch(function (e) {
+          app.innerHTML =
+            '<div class="error">加载失败：<code>' +
+            String(e.message || e) +
+            "</code></div>";
+        });
     })();
   </script>
 </body>

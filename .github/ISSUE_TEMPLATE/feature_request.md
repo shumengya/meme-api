@@ -32,4 +32,4 @@ assignees: ''
 ## 检查清单
 
 - [ ] 我已经搜索过 [已有 Issue](https://github.com/shumengya/meme-api/issues?q=is%3Aissue) 确认没人提过
-- [ ] 我愿意按 [CONTRIBUTING.md](../../CONTRIBUTING.md) 提一个 PR（可选）
+
